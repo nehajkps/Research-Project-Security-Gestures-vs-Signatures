@@ -1,0 +1,70 @@
+clear all;
+N=5;                                                       %number of finger print samples
+templateNum=5;%template number                                %template number
+sampleRate=16;%template resample rate                         %minimized size of the gestures(they all have different lengths so 16 was the minimized size) 
+generalNumber=12;% number of finger type in the file         %how many fingerprints (subjects used)
+
+fpathMTMS=[pwd,'\plot_freeform']; 
+    
+Nconnect=17;                                                  %maximum file number
+resample=16;                                                  %minimized size of gestures (constant for all)
+discreteLevel=15;                                             %level number which we use to divide the continuous gesture points which is then rounded to nearest integer
+
+Nset=N*ones(generalNumber,1);                                 %matrix of ones with size general Number by 1. This multiplied by number N.
+
+fingerNumber=zeros(N,generalNumber);                          %creates a matrix of zeros with size N by general Number
+gesture_points_size=3500;                                     %dimensional size of each point
+gestureOriginal_N=zeros(gesture_points_size,31,N,generalNumber);%creates a matrix of zeros with size gesture_points_size by 31.
+
+gestureRD_N=zeros(resample+1,31,Nconnect,generalNumber);        %creates a matrix of zeros with size resample+1 by 31.
+%fileName='Gesture_test';           
+pointNumber=zeros(generalNumber,N);                             %creates a matrix of zeroes with size general Number by N.   
+maxNumber=0; 
+
+
+for i1=1:12     %represents data from column 3
+    for i2=1:5  %represents data from column 1&2
+        
+        %fID=fopen(['NISDCC-',num2str(i1,'%03d'),'_',num2str(i1,'%03d'),'_',num2str(i2,'%03d'),'.hwr']);
+        %temp=importdata(['NISDCC-',num2str(i1,'%03d'),'_',num2str(i2,'%03d'),'_',num2str(i2,'%03d'),'.hwr']); 
+         %temp=load('NISDCC-001_001_001.hwr');
+            
+        fileName=['NISDCC-',num2str(i1,'%03d'),'_',num2str(i1,'%03d'),'_',num2str(i2,'%03d'),'.hwr'];
+        delimiterIn = ' ';
+        headerlinesIn = 1;
+        temp = importdata(fileName,delimiterIn,headerlinesIn);
+        tempDATA=temp.data; 
+        tempDATA3D=tempDATA(:,1:3);
+        
+        [pointNum,fingNum1]=size(tempDATA3D);
+        fingerNum=fingNum1/3*2;
+        for iFigure=1:(fingerNum/2)
+            
+            gestureOriginal_N(2,31,i1,i2)=i2;
+            gestureOriginal_N(1,31,i1,i2)=fingerNum/2;
+            gestureOriginal_N(1,(iFigure-1)*3+1,i1,i2)=pointNum;
+            gestureOriginal_N(1,(iFigure-1)*3+3,i1,i2)=-1;
+            tempPerFinger=tempDATA3D(:,(iFigure-1)*3+1:(iFigure-1)*3+3); 
+            returnGesture=tempPerFinger;                                                    %equating previous definition to return Gesture (which is used in next line)
+            gestureOriginal_N(2:pointNum+1,(iFigure-1)*3+1,i1,i2)=returnGesture(:,1);      % defining for 4 dimensional
+            gestureOriginal_N(2:pointNum+1,(iFigure-1)*3+2,i1,i2)=returnGesture(:,2);       % defining for 4 dimensional
+        end;
+
+        
+    end
+
+         tempRD=gestureOriginal_N(:,:,i1,i2);
+        tempR=reSampleInter(tempRD,resample);
+
+        tempD=discreteGesture(tempR,discreteLevel);
+        gestureRD_N(:,1:2,i1,i2)=tempD;
+
+end;        
+    clear temp1;
+    
+% Column meanings: 001-012 --> means each authentic person
+%In the 001-012 secion, the 001-005 means the 5 signatures of that
+%authentic writer
+% 021 - 051 ---> the 31 attackers
+%In the 021-051 section, the 001-005 means 5 signatures of the attackers
+%
